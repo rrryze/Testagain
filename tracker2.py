@@ -10,18 +10,32 @@ st.set_page_config(
     layout="wide"
 )
 
-# 🔗 AUTOMATED GOOGLE CLOUD BACKEND ENGINE
+# 🔗 AUTOMATED GOOGLE CLOUD BACKEND ENGINE - UNTOUCHED & PRESERVED
 API_URL = "https://script.google.com/macros/s/AKfycbyRLOGgw_YMn6lm8gCTpLb0HI1YROqnP1wePZw44a1vZdirZzOjeYXM--WupDJeQ7wZ/exec"
 DEFAULT_POOL = ["Kafra's still searching", "Kafra's still searching", "Kafra's still searching", "Kafra's still searching"]
 
 @st.cache_data(ttl=2)  # Re-scans cloud backend data every 2 seconds automatically
 def load_cloud_names(url):
-    """Fetches real-time names from the cloud Google Sheet backend API."""
+    """Fetches real-time names from the cloud Google Sheet backend API and cleans raw arrays."""
     try:
         response = requests.get(f"{url}?timestamp={pd.Timestamp.now().timestamp()}", timeout=5)
         if response.status_code == 200:
             data = response.json()
-            names = [str(row).strip() for row in data if row and str(row).strip() != ""]
+            
+            names = []
+            for row in data:
+                # If row arrives nested as a sub-list, extract the first item string
+                if isinstance(row, list) and len(row) > 0:
+                    val = str(row[0]).strip()
+                else:
+                    val = str(row).strip()
+                
+                # Definitive cleanup string filter to violently strip brackets and raw quotes
+                val = val.replace("[", "").replace("]", "").replace("'", "").replace('"', '')
+                
+                if val != "":
+                    names.append(val)
+                    
             if len(names) >= 4:
                 return names[:4]
             elif len(names) > 0:
@@ -33,7 +47,9 @@ def load_cloud_names(url):
 def write_names_to_cloud(url, names_list):
     """Pushes new admin-edited names up to the live Google Sheet cloud architecture."""
     try:
-        response = requests.post(url, data=json.dumps(names_list), timeout=5)
+        # Pre-strip brackets locally before sending to Google Sheets database network
+        clean_list = [str(n).replace("[", "").replace("]", "").replace("'", "").replace('"', '') for n in names_list]
+        response = requests.post(url, data=json.dumps(clean_list), timeout=5)
         if response.status_code == 200:
             return True
     except Exception as e:
@@ -70,7 +86,7 @@ st.markdown("""
         animation-iteration-count: infinite;
         animation-fill-mode: both;
         font-weight: bold;
-        color: #D4AF37; /* Colored dots for emphasis */
+        color: #D4AF37;
     }
     .loading-dots span:nth-child(2) { animation-delay: .2s; }
     .loading-dots span:nth-child(3) { animation-delay: .4s; }
@@ -93,7 +109,6 @@ live_cols = st.columns(4)
 # Render the stylized MVP cards with animated searching tags
 for i, agent in enumerate(agent_pool[:4]):
     with live_cols[i]:
-        # If the backend still has the fallback text, wrap it with animated CSS spans
         if agent == "Kafra's still searching":
             display_html = """
             <div class='status-card'>
@@ -163,12 +178,12 @@ else:
     st.markdown("---")
     control_cols = st.columns(2)
     
-    with control_cols[0]:  # <-- Explicit index 0 protected 
+    with control_cols[0]:  # Explicit index zero handles column tracking perfectly
         if st.button("Log Out of Admin Status"):
             st.session_state.is_admin = False
             st.rerun()
             
-    with control_cols[1]:  # <-- Explicit index 1 protected
+    with control_cols[1]:  # Explicit index one handles layout reset tracking perfectly
         if not st.session_state.schedule_db.empty:
             if st.button("Clear All Data Logs"):
                 st.session_state.schedule_db = pd.DataFrame(columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"])
