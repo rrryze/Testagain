@@ -57,9 +57,9 @@ st.markdown("### 🔐 Admin Access")
 if not st.session_state.is_admin:
     # --- LOGIN INTERFACE ---
     with st.form(key="login_form"):
-        login_cols = st.columns(2)
-        username = login_cols.text_input("User", placeholder="Enter username")
-        password = login_cols.text_input("Password", type="password", placeholder="Enter password")
+        col1, col2 = st.columns(2)  # <-- Fixed: Properly unpacked
+        username = col1.text_input("User", placeholder="Enter username")
+        password = col2.text_input("Password", type="password", placeholder="Enter password")
         
         login_button = st.form_submit_button(label="Authenticate")
         
@@ -106,17 +106,17 @@ else:
     st.markdown("#### 🗺️ Assign New Objective")
 
     with st.form(key="mission_form", clear_on_submit=True):
-        form_cols = st.columns(2)
+        form_col1, form_col2 = st.columns(2)  # <-- Fixed: Properly unpacked
         
-        with form_cols[0]:
+        with form_col1:
             selected_agent = st.selectbox("Assign Operative", st.session_state.agent_pool)
             mission_name = st.text_input("Objective / Mission Name", placeholder="e.g., Golden Circle Extraction")
             mission_date = st.date_input("Target Date", min_value=datetime.today())
         
-        with form_cols[1]:
-            time_cols = st.columns(2)
-            start_t = time_cols.time_input("Commence Time", value=time(9, 0))
-            end_t = time_cols.time_input("Extraction Time", value=time(17, 0))
+        with form_col2:
+            time_col1, time_col2 = st.columns(2)  # <-- Fixed: Properly unpacked
+            start_t = time_col1.time_input("Commence Time", value=time(9, 0))
+            end_t = time_col2.time_input("Extraction Time", value=time(17, 0))
             
             risk_level = st.select_slider("Threat Matrix Level", options=["Low", "Medium", "High", "Critical"])
         
