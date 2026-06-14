@@ -21,10 +21,10 @@ st.markdown("""
     .kingsman-title { text-align: center; color: #D4AF37; font-weight: bold; font-family: 'Georgia', serif; }
     .status-card { background-color: #1E293B; padding: 15px; border-radius: 8px; border-left: 5px solid #D4AF37; }
     </style>
-""", unsafe_allowed_html=True)
+""", unsafe_allow_html=True)  # <-- Fixed typo here
 
-st.markdown("<h1 class='kingsman-title'>🕶️ KINGSMAN: SPOILS OF WAR</h1>", unsafe_allowed_html=True)
-st.markdown("<h4 style='text-align: center; color: #888;'>Tactical 4-Agent Deployment Scheduler</h4>", unsafe_allowed_html=True)
+st.markdown("<h1 class='kingsman-title'>🕶️ KINGSMAN: SPOILS OF WAR</h1>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: #888;'>Tactical 4-Agent Deployment Scheduler</h4>", unsafe_allow_html=True)
 st.divider()
 
 # --- SIDEBAR: MISSION BRIEFING & INPUT ---
@@ -91,7 +91,7 @@ for i, agent in enumerate(agent_pool):
             <h4>{agent}</h4>
             <p>Active Commitments: <b>{task_count}</b></p>
         </div>
-        """, unsafe_allowed_html=True)
+        """, unsafe_allow_html=True)
 
 st.markdown("### 📋 Master Timeline Ledger")
 if st.session_state.schedule_db.empty:
