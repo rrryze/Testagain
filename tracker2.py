@@ -11,7 +11,6 @@ st.set_page_config(
 )
 
 # 🔗 YOUR EXPERT GOOGLE SHEET LINKS
-# The read link pulls data, the form link allows the app to inject edits directly back to the cloud
 READ_URL = "https://google.com"
 DEFAULT_POOL = ["Harry (Galahad)", "Eggsy (Galahad II)", "Roxy (Lancelot)", "Merlin"]
 
@@ -34,13 +33,6 @@ def load_cloud_names(url):
 def write_names_to_cloud(names_list):
     """Sends a form payload to seamlessly overwrite row variables in the cloud sheet."""
     try:
-        # Extract the base ID out of your specific web asset string
-        sheet_id = "11WEaocX8sg-a-x5vHje7861yhW0ciPKvlaoFV7SFHKB"
-        
-        # We leverage the Google Forms microservice wrapper to securely push row data
-        # If deploying on fully isolated business engines, standard st.connection('gsheets') can replace this.
-        form_url = f"https://google.com"
-        
         # Temporary runtime state update as fallback if write privileges are still initializing
         st.session_state.temp_pool = names_list
         return True
@@ -147,12 +139,12 @@ else:
     st.markdown("---")
     control_cols = st.columns(2)
     
-    with control_cols:  
+    with control_cols[0]:  # <-- Fixed: Added index [0] to target the first column container
         if st.button("Log Out of Admin Status"):
             st.session_state.is_admin = False
             st.rerun()
             
-    with control_cols:  
+    with control_cols[1]:  # <-- Fixed: Added index [1] to target the second column container
         if not st.session_state.schedule_db.empty:
             if st.button("Clear All Data Logs"):
                 st.session_state.schedule_db = pd.DataFrame(columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"])
