@@ -103,12 +103,12 @@ else:
     st.markdown("---")
     control_cols = st.columns(2)
     
-    with control_cols:
+    with control_cols[0]:  # <-- Fixed: Target first column item
         if st.button("Log Out of Admin Status"):
             st.session_state.is_admin = False
             st.rerun()
             
-    with control_cols:
+    with control_cols[1]:  # <-- Fixed: Target second column item
         if not st.session_state.schedule_db.empty:
             if st.button("Clear All Data Logs"):
                 st.session_state.schedule_db = pd.DataFrame(columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"])
