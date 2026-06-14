@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import requests
+import json
 
 # --- CODE CONFIGURATION ---
 st.set_page_config(
@@ -8,13 +10,39 @@ st.set_page_config(
     layout="wide"
 )
 
-DEFAULT_POOL = ["Peter", "James", "Matthew", "Nathanael"]
+# 🔗 AUTOMATED GOOGLE CLOUD BACKEND ENGINE
+API_URL = "https://script.google.com/macros/s/AKfycbyRLOGgw_YMn6lm8gCTpLb0HI1YROqnP1wePZw44a1vZdirZzOjeYXM--WupDJeQ7wZ/exec"
+DEFAULT_POOL = ["Harry (Galahad)", "Eggsy (Galahad II)", "Roxy (Lancelot)", "Merlin"]
 
-# --- INITIALIZE NATIVE CLOUD KEY-VALUE STORE ---
-# st.kv_store automatically synchronizes data globally across all 3 admins over the cloud.
-if "mvp_names" not in st.kv_store:
-    st.kv_store["mvp_names"] = DEFAULT_POOL
+@st.cache_data(ttl=2)  # Re-scans cloud backend data every 2 seconds automatically
+def load_cloud_names(url):
+    """Fetches real-time names from the cloud Google Sheet backend API."""
+    try:
+        # Appending a dummy timestamp parameter breaks downstream proxy caching
+        response = requests.get(f"{url}?timestamp={pd.Timestamp.now().timestamp()}", timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            # Flatten out the 2D array returned from Google Sheet column data
+            names = [str(row[0]).strip() for row in data if row and str(row[0]).strip() != ""]
+            if len(names) >= 4:
+                return names[:4]
+            elif len(names) > 0:
+                return names
+    except Exception:
+        return DEFAULT_POOL
+    return DEFAULT_POOL
 
+def write_names_to_cloud(url, names_list):
+    """Pushes new admin-edited names up to the live Google Sheet cloud architecture."""
+    try:
+        response = requests.post(url, data=json.dumps(names_list), timeout=5)
+        if response.status_code == 200:
+            return True
+    except Exception as e:
+        st.error(f"Cloud update bottleneck: {e}")
+    return False
+
+# --- INITIALIZE DATABASE & LOCAL STATES ---
 if "schedule_db" not in st.session_state:
     st.session_state.schedule_db = pd.DataFrame(
         columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"]
@@ -23,10 +51,10 @@ if "schedule_db" not in st.session_state:
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
-# Fetch fresh cloud configurations simultaneously for all active dashboard administrators
-agent_pool = st.kv_store["mvp_names"]
+# Load shared cloud array live from the spreadsheet server
+agent_pool = load_cloud_names(API_URL)
 
-# Ensure we always have exactly 4 slots filled to prevent interface layout breaking
+# Fill empty slots to prevent column breakdown if sheet yields short entries
 while len(agent_pool) < 4:
     agent_pool.append(f"Operative {len(agent_pool) + 1}")
 
@@ -95,27 +123,28 @@ else:
         if any(name.strip() == "" for name in new_names):
             st.error("❌ Error: Agent names cannot be blank.")
         else:
-            # Re-map any running scheduler instances
+            # Re-map any running scheduler instances locally
             for old_name, new_name in zip(agent_pool, new_names):
                 if old_name != new_name:
                     st.session_state.schedule_db.loc[st.session_state.schedule_db["Agent"] == old_name, "Agent"] = new_name
             
-            # Pushes the updated array directly to the secure built-in Streamlit Cloud Database
-            st.kv_store["mvp_names"] = new_names
-            st.success("💾 Cloud Sync Complete! All admins will see these updated names instantly.")
-            st.rerun()
+            # Pushes the updated array to the Google Sheet backend
+            if write_names_to_cloud(API_URL, new_names):
+                st.success("💾 Cloud Sync Complete! All admins will see these updated names instantly.")
+                st.cache_data.clear()  # Clear cache to force a fresh data fetch on rerun
+                st.rerun()
 
-# --- DISCONNECT / RESET UTILITIES ---
-st.markdown("---")
-control_cols = st.columns(2)
-
-with control_cols[0]:  
-    if st.button("Log Out of Admin Status"):
-        st.session_state.is_admin = False
-        st.rerun()
-        
-with control_cols[1]:  
-    if not st.session_state.schedule_db.empty:
-        if st.button("Clear All Data Logs"):
-            st.session_state.schedule_db = pd.DataFrame(columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"])
+    # --- DISCONNECT / RESET UTILITIES ---
+    st.markdown("---")
+    control_cols = st.columns(2)
+    
+    with control_cols[0]:  
+        if st.button("Log Out of Admin Status"):
+            st.session_state.is_admin = False
             st.rerun()
+            
+    with control_cols[1]:  
+        if not st.session_state.schedule_db.empty:
+            if st.button("Clear All Data Logs"):
+                st.session_state.schedule_db = pd.DataFrame(columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"])
+                st.rerun()
