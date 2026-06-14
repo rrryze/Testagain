@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import json
-import os
+import requests
+import io
 
 # --- CODE CONFIGURATION ---
 st.set_page_config(
@@ -10,29 +10,28 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- HARD RECOVERY / STORAGE PATHS ---
-DATA_FILE = "mvp_data.json"
+# 🔗 ACTIVE CLOUD SOURCE OF TRUTH
+CLOUD_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS71WEaocX8sg-a-x5vHje7861yhW0ciPKvlaoFV7SFHKBqLnes43gvi_I0wiShGb6ir-7EG023HYJE/pub?output=csv"
 DEFAULT_POOL = ["Harry (Galahad)", "Eggsy (Galahad II)", "Roxy (Lancelot)", "Merlin"]
 
-def load_permanent_names():
-    """Reads permanent configurations from file storage safely."""
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, "r") as f:
-                return json.load(f)
-        except Exception:
-            return DEFAULT_POOL
+@st.cache_data(ttl=5)  # Caches data for 5 seconds so multiple refreshes don't hit rate limits
+def load_cloud_names(url):
+    """Fetches locked configurations directly from the shared Google Sheet cloud matrix."""
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            df = pd.read_csv(io.StringIO(response.text))
+            
+            # Use the first column values as the agent names
+            if not df.empty and len(df) >= 4:
+                return df.iloc[:4, 0].dropna().tolist()
+            elif not df.empty:
+                return df.iloc[:, 0].dropna().tolist()
+    except Exception:
+        return DEFAULT_POOL
     return DEFAULT_POOL
 
-def save_permanent_names(names_list):
-    """Writes updated configurations directly to persistent hardware storage."""
-    try:
-        with open(DATA_FILE, "w") as f:
-            json.dump(names_list, f)
-    except Exception as e:
-        st.error(f"Write Failure: {e}")
-
-# --- INITIALIZE CORE PLATFORM DATABASE (SESSION STATE) ---
+# --- INITIALIZE INTERNAL STRUCTURES ---
 if "schedule_db" not in st.session_state:
     st.session_state.schedule_db = pd.DataFrame(
         columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"]
@@ -41,8 +40,12 @@ if "schedule_db" not in st.session_state:
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
 
-# Fetch fresh or saved permanent configurations dynamically on runtime iteration
-agent_pool = load_permanent_names()
+# Fetch fresh cloud configurations simultaneously for all active dashboard administrators
+agent_pool = load_cloud_names(CLOUD_SHEET_CSV_URL)
+
+# Ensure we always have exactly 4 slots filled to prevent interface layout breaking
+while len(agent_pool) < 4:
+    agent_pool.append(f"Operative {len(agent_pool) + 1}")
 
 # --- EMULATED THEME STYLING ---
 st.markdown("""
@@ -59,8 +62,8 @@ st.divider()
 st.subheader("📊 MVP")
 live_cols = st.columns(4)
 
-# Render the stylized MVP cards with permanently loaded records
-for i, agent in enumerate(agent_pool):
+# Render the stylized MVP cards using cloud data shared among the 3 users
+for i, agent in enumerate(agent_pool[:4]):
     with live_cols[i]:
         st.markdown(f"""
         <div class='status-card'>
@@ -95,30 +98,25 @@ else:
     
     # 🛠️ EDIT NAMES CAPABILITY
     st.markdown("#### ⚙️ MVP's Today")
-    new_names = []
-    edit_cols = st.columns(4)
     
-    # Pre-populate input modules with the currently locked-in storage settings
+    # Inform the admins exactly how this deployment sync operates
+    st.warning(
+        "📝 **Cloud Management Notice:** Because you are using a shared cloud-published spreadsheet, "
+        "any of the 3 admins can change names directly on the Google Sheet. The web app will update automatically."
+    )
+    
+    edit_cols = st.columns(4)
     for i in range(4):
         with edit_cols[i]:
-            current_name = agent_pool[i]
-            edited_name = st.text_input(f"Operative {i+1} Name", value=current_name, key=f"agent_input_{i}")
-            new_names.append(edited_name)
+            st.text_input(f"Current Live Name {i+1}", value=agent_pool[i], disabled=True, key=f"agent_view_{i}")
             
-    # Apply roster updates straight to file storage
-    if st.button("Update MVP List"):
-        if any(name.strip() == "" for name in new_names):
-            st.error("❌ Error: Agent names cannot be blank.")
-        else:
-            # Re-map backend parameters for consistency inside temporary deployment table
-            for old_name, new_name in zip(agent_pool, new_names):
-                if old_name != new_name:
-                    st.session_state.schedule_db.loc[st.session_state.schedule_db["Agent"] == old_name, "Agent"] = new_name
-            
-            # Commit straight to the permanent hard disk array
-            save_permanent_names(new_names)
-            st.success("💾 Roster permanently locked into database architecture!")
-            st.rerun()
+    st.markdown(
+        f'<a href="https://google.com" target="_blank">'
+        f'<button style="background-color: #D4AF37; color: black; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold;">'
+        f'🔗 Open Google Sheet to Edit Names'
+        f'</button></a>', 
+        unsafe_allow_html=True
+    )
 
     # --- DISCONNECT / RESET UTILITIES ---
     st.markdown("---")
