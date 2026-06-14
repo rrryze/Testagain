@@ -24,9 +24,8 @@ def load_cloud_names(url):
             
             names = []
             for row in data:
-                # If row arrives nested as a sub-list, extract the first item string
                 if isinstance(row, list) and len(row) > 0:
-                    val = str(row[0]).strip()
+                    val = str(row).strip()
                 else:
                     val = str(row).strip()
                 
@@ -47,7 +46,6 @@ def load_cloud_names(url):
 def write_names_to_cloud(url, names_list):
     """Pushes new admin-edited names up to the live Google Sheet cloud architecture."""
     try:
-        # Pre-strip brackets locally before sending to Google Sheets database network
         clean_list = [str(n).replace("[", "").replace("]", "").replace("'", "").replace('"', '') for n in names_list]
         response = requests.post(url, data=json.dumps(clean_list), timeout=5)
         if response.status_code == 200:
@@ -71,13 +69,55 @@ agent_pool = load_cloud_names(API_URL)
 while len(agent_pool) < 4:
     agent_pool.append("Kafra's still searching")
 
-# --- EMULATED THEME STYLING & TEXT ANIMATION ---
+# --- CUSTOM CSS: TYPEWRITER FONTS + HIGH-INTENSITY NEON GLOW ENGINE ---
 st.markdown("""
     <style>
-    .kingsman-title { text-align: center; color: #D4AF37; font-weight: bold; font-family: 'Georgia', serif; }
-    .status-card { background-color: #1E293B; padding: 15px; border-radius: 8px; border-left: 5px solid #D4AF37; min-height: 100px; }
-    .loot-title { color: #888; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-    .agent-name { margin-top: 0px; font-weight: bold; color: #FFFFFF; display: inline-block; }
+    /* ⌨️ GLOBAL TYPEWRITER OVERRIDE */
+    html, body, [class*="st-"], p, h1, h2, h3, h4, h5, h6, label, input, button {
+        font-family: 'Courier New', Courier, monospace !important;
+    }
+
+    /* 🧠 MAIN LAYOUT STYLING */
+    .status-card { 
+        background-color: #0F172A; 
+        padding: 20px; 
+        border-radius: 10px; 
+        border: 1px solid #1E293B;
+        border-left: 5px solid #D4AF37; 
+        min-height: 120px; 
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ⚪ NEON WHITE GLOW: MAIN TITLE */
+    .neon-title { 
+        text-align: center; 
+        color: #FFFFFF; 
+        font-weight: bold; 
+        font-size: 2.5rem;
+        text-shadow: 0 0 5px #FFF, 0 0 10px #FFF, 0 0 20px #FFF, 0 0 40px #B0B0B0;
+        margin-bottom: 10px;
+    }
+
+    /* 🔮 NEON PURPLE GLOW: LOOT TITLE */
+    .neon-purple-loot { 
+        color: #E0B0FF; 
+        font-size: 0.9rem; 
+        font-weight: bold; 
+        margin-bottom: 8px; 
+        text-transform: uppercase; 
+        letter-spacing: 2px;
+        text-shadow: 0 0 5px #D800FF, 0 0 10px #D800FF, 0 0 20px #D800FF;
+    }
+
+    /* 🟢 NEON GREEN GLOW: NAME MATRIX */
+    .neon-green-name { 
+        margin-top: 5px; 
+        font-weight: bold; 
+        font-size: 1.3rem;
+        color: #E8FFEA; 
+        display: inline-block;
+        text-shadow: 0 0 5px #00FF66, 0 0 10px #00FF66, 0 0 20px #00FF66;
+    }
     
     /* 🎬 SEARCHING DOTS CSS ANIMATION */
     .loading-dots span {
@@ -86,7 +126,8 @@ st.markdown("""
         animation-iteration-count: infinite;
         animation-fill-mode: both;
         font-weight: bold;
-        color: #D4AF37;
+        color: #00FF66;
+        text-shadow: 0 0 5px #00FF66, 0 0 10px #00FF66;
     }
     .loading-dots span:nth-child(2) { animation-delay: .2s; }
     .loading-dots span:nth-child(3) { animation-delay: .4s; }
@@ -99,28 +140,29 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h1 class='kingsman-title'>⚔️ KINGSMAN: SPOILS OF WAR</h1>", unsafe_allow_html=True)
+# Render the High-Intensity White Neon Header Title
+st.markdown("<h1 class='neon-title'>⚔️ KINGSMAN: SPOILS OF WAR</h1>", unsafe_allow_html=True)
 st.divider()
 
 # --- MAIN PAGE: MVP LOOT DISTRIBUTION PANEL ---
 st.subheader("📊 MVP Loot Distribution")  
 live_cols = st.columns(4)
 
-# Render the stylized MVP cards with animated searching tags
+# Render the stylized MVP cards with animated searching tags and neon layers
 for i, agent in enumerate(agent_pool[:4]):
     with live_cols[i]:
         if agent == "Kafra's still searching":
             display_html = """
             <div class='status-card'>
-                <div class='loot-title'>Pup. Card Fragment</div>
-                <h4 class='agent-name'>Kafra's still searching<span class='loading-dots'><span>.</span><span>.</span><span>.</span></span></h4>
+                <div class='neon-purple-loot'>Pup. Card Fragment</div>
+                <h4 class='neon-green-name'>Kafra's still searching<span class='loading-dots'><span>.</span><span>.</span><span>.</span></span></h4>
             </div>
             """
         else:
             display_html = f"""
             <div class='status-card'>
-                <div class='loot-title'>Pup. Card Fragment</div>
-                <h4 class='agent-name'>{agent}</h4>
+                <div class='neon-purple-loot'>Pup. Card Fragment</div>
+                <h4 class='neon-green-name'>{agent}</h4>
             </div>
             """
         st.markdown(display_html, unsafe_allow_html=True)
@@ -178,12 +220,12 @@ else:
     st.markdown("---")
     control_cols = st.columns(2)
     
-    with control_cols[0]:  # Explicit index zero handles column tracking perfectly
+    with control_cols:  
         if st.button("Log Out of Admin Status"):
             st.session_state.is_admin = False
             st.rerun()
             
-    with control_cols[1]:  # Explicit index one handles layout reset tracking perfectly
+    with control_cols:  
         if not st.session_state.schedule_db.empty:
             if st.button("Clear All Data Logs"):
                 st.session_state.schedule_db = pd.DataFrame(columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"])
