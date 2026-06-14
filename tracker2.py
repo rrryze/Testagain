@@ -35,16 +35,12 @@ st.divider()
 st.subheader("📊 MVP")
 live_cols = st.columns(4)
 
-# Keep track of active commitments per agent dynamically
+# Render the stylized MVP cards with the names
 for i, agent in enumerate(st.session_state.agent_pool):
     with live_cols[i]:
-        agent_tasks = st.session_state.schedule_db[st.session_state.schedule_db["Agent"] == agent]
-        task_count = len(agent_tasks)
-        
         st.markdown(f"""
         <div class='status-card'>
             <h4>{agent}</h4>
-            <p>Active Commitments: <b>{task_count}</b></p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -74,7 +70,7 @@ else:
     st.info("⚡ Authenticated Session Active.")
     
     # 🛠️ EDIT NAMES CAPABILITY
-    st.markdown("#### ⚙️ Operative Roster Management")
+    st.markdown("#### ⚙️ MVP's Today")  # <-- Changed here
     new_names = []
     edit_cols = st.columns(4)
     
@@ -86,7 +82,7 @@ else:
             new_names.append(edited_name)
             
     # Apply roster update
-    if st.button("Update Operative Roster"):
+    if st.button("Update MVP List"):  # <-- Changed here
         if any(name.strip() == "" for name in new_names):
             st.error("❌ Error: Agent names cannot be blank.")
         else:
@@ -103,12 +99,12 @@ else:
     st.markdown("---")
     control_cols = st.columns(2)
     
-    with control_cols[0]:  # <-- Fixed: Target first column item
+    with control_cols[0]:  
         if st.button("Log Out of Admin Status"):
             st.session_state.is_admin = False
             st.rerun()
             
-    with control_cols[1]:  # <-- Fixed: Target second column item
+    with control_cols[1]:  
         if not st.session_state.schedule_db.empty:
             if st.button("Clear All Data Logs"):
                 st.session_state.schedule_db = pd.DataFrame(columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"])
