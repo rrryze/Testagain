@@ -11,17 +11,19 @@ st.set_page_config(
 )
 
 # 🔗 AUTOMATED GOOGLE CLOUD BACKEND ENGINE
-API_URL = "https://google.com"
+API_URL = "https://script.google.com/macros/s/AKfycbyRLOGgw_YMn6lm8gCTpLb0HI1YROqnP1wePZw44a1vZdirZzOjeYXM--WupDJeQ7wZ/exec"
 DEFAULT_POOL = ["Harry (Galahad)", "Eggsy (Galahad II)", "Roxy (Lancelot)", "Merlin"]
 
 @st.cache_data(ttl=2)  # Re-scans cloud backend data every 2 seconds automatically
 def load_cloud_names(url):
     """Fetches real-time names from the cloud Google Sheet backend API."""
     try:
+        # Appending a dummy timestamp parameter breaks downstream proxy caching
         response = requests.get(f"{url}?timestamp={pd.Timestamp.now().timestamp()}", timeout=5)
         if response.status_code == 200:
             data = response.json()
-            names = [str(row).strip() for row in data if row and str(row).strip() != ""]
+            # Flatten out the 2D array returned from Google Sheet column data
+            names = [str(row[0]).strip() for row in data if row and str(row[0]).strip() != ""]
             if len(names) >= 4:
                 return names[:4]
             elif len(names) > 0:
@@ -52,6 +54,7 @@ if "is_admin" not in st.session_state:
 # Load shared cloud array live from the spreadsheet server
 agent_pool = load_cloud_names(API_URL)
 
+# Fill empty slots to prevent column breakdown if sheet yields short entries
 while len(agent_pool) < 4:
     agent_pool.append(f"Operative {len(agent_pool) + 1}")
 
@@ -60,25 +63,22 @@ st.markdown("""
     <style>
     .kingsman-title { text-align: center; color: #D4AF37; font-weight: bold; font-family: 'Georgia', serif; }
     .status-card { background-color: #1E293B; padding: 15px; border-radius: 8px; border-left: 5px solid #D4AF37; }
-    .loot-title { color: #888; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-    .agent-name { margin-top: 0px; font-weight: bold; color: #FFFFFF; }
     </style>
 """, unsafe_allow_html=True)
 
 st.markdown("<h1 class='kingsman-title'>🕶️ KINGSMAN: SPOILS OF WAR</h1>", unsafe_allow_html=True)
 st.divider()
 
-# --- MAIN PAGE: MVP LOOT DISTRIBUTION PANEL ---
-st.subheader("📊 MVP Loot Distribution")  # <-- Changed header here
+# --- MAIN PAGE: MVP OVERVIEW PANEL ---
+st.subheader("📊 MVP")
 live_cols = st.columns(4)
 
-# Render the stylized MVP cards with the loot title inside the box
+# Render the stylized MVP cards using cloud data shared among the 3 users
 for i, agent in enumerate(agent_pool[:4]):
     with live_cols[i]:
         st.markdown(f"""
         <div class='status-card'>
-            <div class='loot-title'>Pup. Card Fragment</div>
-            <h4 class='agent-name'>{agent}</h4>
+            <h4>{agent}</h4>
         </div>
         """, unsafe_allow_html=True)
 
@@ -113,6 +113,7 @@ else:
     new_names = []
     edit_cols = st.columns(4)
     
+    # Open up direct input fields populated with current cloud data
     for i in range(4):
         with edit_cols[i]:
             edited_name = st.text_input(f"Operative {i+1} Name", value=agent_pool[i], key=f"agent_edit_{i}")
@@ -122,13 +123,15 @@ else:
         if any(name.strip() == "" for name in new_names):
             st.error("❌ Error: Agent names cannot be blank.")
         else:
+            # Re-map any running scheduler instances locally
             for old_name, new_name in zip(agent_pool, new_names):
                 if old_name != new_name:
                     st.session_state.schedule_db.loc[st.session_state.schedule_db["Agent"] == old_name, "Agent"] = new_name
             
+            # Pushes the updated array to the Google Sheet backend
             if write_names_to_cloud(API_URL, new_names):
                 st.success("💾 Cloud Sync Complete! All admins will see these updated names instantly.")
-                st.cache_data.clear()
+                st.cache_data.clear()  # Clear cache to force a fresh data fetch on rerun
                 st.rerun()
 
     # --- DISCONNECT / RESET UTILITIES ---
