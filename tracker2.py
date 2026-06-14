@@ -69,7 +69,7 @@ agent_pool = load_cloud_names(API_URL)
 while len(agent_pool) < 4:
     agent_pool.append("Kafra's still searching")
 
-# --- CUSTOM CSS: TYPEWRITER FONTS + HIGH-INTENSITY NEON GLOW ENGINE ---
+# --- CUSTOM CSS: TYPEWRITER FONTS + ANIMATED HIGH-INTENSITY NEON GLOW ENGINE ---
 st.markdown("""
     <style>
     /* ⌨️ GLOBAL TYPEWRITER OVERRIDE */
@@ -88,17 +88,17 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
 
-    /* ⚪ NEON WHITE GLOW: MAIN TITLE */
+    /* ⚪ ANIMATED NEON WHITE GLOW: MAIN TITLE (PULSING) */
     .neon-title { 
         text-align: center; 
         color: #FFFFFF; 
         font-weight: bold; 
         font-size: 2.5rem;
-        text-shadow: 0 0 5px #FFF, 0 0 10px #FFF, 0 0 20px #FFF, 0 0 40px #B0B0B0;
         margin-bottom: 10px;
+        animation: whitePulse 3s infinite alternate;
     }
 
-    /* 🔮 NEON PURPLE GLOW: LOOT TITLE */
+    /* 🔮 ANIMATED NEON PURPLE GLOW: LOOT TITLE (CYBERPUNK FLICKER) */
     .neon-purple-loot { 
         color: #E0B0FF; 
         font-size: 0.9rem; 
@@ -106,17 +106,17 @@ st.markdown("""
         margin-bottom: 8px; 
         text-transform: uppercase; 
         letter-spacing: 2px;
-        text-shadow: 0 0 5px #D800FF, 0 0 10px #D800FF, 0 0 20px #D800FF;
+        animation: purpleFlicker 4s infinite;
     }
 
-    /* 🟢 NEON GREEN GLOW: NAME MATRIX */
+    /* 🟢 ANIMATED NEON GREEN GLOW: NAME MATRIX (BREATHING WAVE) */
     .neon-green-name { 
         margin-top: 5px; 
         font-weight: bold; 
         font-size: 1.3rem;
         color: #E8FFEA; 
         display: inline-block;
-        text-shadow: 0 0 5px #00FF66, 0 0 10px #00FF66, 0 0 20px #00FF66;
+        animation: greenBreathing 2.5s infinite ease-in-out alternate;
     }
     
     /* 🎬 SEARCHING DOTS CSS ANIMATION */
@@ -132,6 +132,44 @@ st.markdown("""
     .loading-dots span:nth-child(2) { animation-delay: .2s; }
     .loading-dots span:nth-child(3) { animation-delay: .4s; }
 
+    /* ==========================================
+       🌟 NEON ENGINE TIMELINE ANIMATIONS (KEYFRAMES)
+       ========================================== */
+
+    /* 1. White Title Pulsing Loop */
+    @keyframes whitePulse {
+        0% {
+            text-shadow: 0 0 4px #fff, 0 0 10px #fff, 0 0 18px #fff, 0 0 30px #B0B0B0;
+        }
+        100% {
+            text-shadow: 0 0 8px #fff, 0 0 20px #fff, 0 0 35px #fff, 0 0 60px #fff;
+        }
+    }
+
+    /* 2. Purple Loot Neon Sign Flicker */
+    @keyframes purpleFlicker {
+        0%, 18%, 22%, 25%, 53%, 57%, 100% {
+            text-shadow: 0 0 4px #D800FF, 0 0 10px #D800FF, 0 0 18px #D800FF;
+        }
+        20%, 24%, 55% {
+            text-shadow: none;
+            opacity: 0.7;
+        }
+    }
+
+    /* 3. Green Name Dynamic Breathing */
+    @keyframes greenBreathing {
+        0% {
+            text-shadow: 0 0 3px #00FF66, 0 0 8px #00FF66;
+            transform: scale(0.99);
+        }
+        100% {
+            text-shadow: 0 0 8px #00FF66, 0 0 20px #00FF66, 0 0 30px #00FF66;
+            transform: scale(1.01);
+        }
+    }
+
+    /* 4. Falling Text Dots */
     @keyframes blink {
         0% { opacity: .2; }
         20% { opacity: 1; }
