@@ -11,8 +11,8 @@ st.set_page_config(
 )
 
 # 🔗 AUTOMATED GOOGLE CLOUD BACKEND ENGINE
-API_URL = "https://google.com"
-DEFAULT_POOL = ["Kafra's still searching..", "Kafra's still searching..", "Kafra's still searching..", "Kafra's still searching.."]
+API_URL = "https://script.google.com/macros/s/AKfycbyRLOGgw_YMn6lm8gCTpLb0HI1YROqnP1wePZw44a1vZdirZzOjeYXM--WupDJeQ7wZ/exec"
+DEFAULT_POOL = ["Kafra's still searching", "Kafra's still searching", "Kafra's still searching", "Kafra's still searching"]
 
 @st.cache_data(ttl=2)  # Re-scans cloud backend data every 2 seconds automatically
 def load_cloud_names(url):
@@ -53,15 +53,33 @@ if "is_admin" not in st.session_state:
 agent_pool = load_cloud_names(API_URL)
 
 while len(agent_pool) < 4:
-    agent_pool.append("Kafra's still searching..")
+    agent_pool.append("Kafra's still searching")
 
-# --- EMULATED THEME STYLING ---
+# --- EMULATED THEME STYLING & TEXT ANIMATION ---
 st.markdown("""
     <style>
     .kingsman-title { text-align: center; color: #D4AF37; font-weight: bold; font-family: 'Georgia', serif; }
-    .status-card { background-color: #1E293B; padding: 15px; border-radius: 8px; border-left: 5px solid #D4AF37; }
+    .status-card { background-color: #1E293B; padding: 15px; border-radius: 8px; border-left: 5px solid #D4AF37; min-height: 100px; }
     .loot-title { color: #888; font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-    .agent-name { margin-top: 0px; font-weight: bold; color: #FFFFFF; }
+    .agent-name { margin-top: 0px; font-weight: bold; color: #FFFFFF; display: inline-block; }
+    
+    /* 🎬 SEARCHING DOTS CSS ANIMATION */
+    .loading-dots span {
+        animation-name: blink;
+        animation-duration: 1.4s;
+        animation-iteration-count: infinite;
+        animation-fill-mode: both;
+        font-weight: bold;
+        color: #D4AF37; /* Colored dots for emphasis */
+    }
+    .loading-dots span:nth-child(2) { animation-delay: .2s; }
+    .loading-dots span:nth-child(3) { animation-delay: .4s; }
+
+    @keyframes blink {
+        0% { opacity: .2; }
+        20% { opacity: 1; }
+        100% { opacity: .2; }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -72,15 +90,25 @@ st.divider()
 st.subheader("📊 MVP Loot Distribution")  
 live_cols = st.columns(4)
 
-# Render the stylized MVP cards with the loot title inside the box
+# Render the stylized MVP cards with animated searching tags
 for i, agent in enumerate(agent_pool[:4]):
     with live_cols[i]:
-        st.markdown(f"""
-        <div class='status-card'>
-            <div class='loot-title'>Pup. Card Fragment</div>
-            <h4 class='agent-name'>{agent}</h4>
-        </div>
-        """, unsafe_allow_html=True)
+        # If the backend still has the fallback text, wrap it with animated CSS spans
+        if agent == "Kafra's still searching":
+            display_html = """
+            <div class='status-card'>
+                <div class='loot-title'>Pup. Card Fragment</div>
+                <h4 class='agent-name'>Kafra's still searching<span class='loading-dots'><span>.</span><span>.</span><span>.</span></span></h4>
+            </div>
+            """
+        else:
+            display_html = f"""
+            <div class='status-card'>
+                <div class='loot-title'>Pup. Card Fragment</div>
+                <h4 class='agent-name'>{agent}</h4>
+            </div>
+            """
+        st.markdown(display_html, unsafe_allow_html=True)
 
 st.divider()
 
@@ -135,12 +163,12 @@ else:
     st.markdown("---")
     control_cols = st.columns(2)
     
-    with control_cols:  
+    with control_cols[0]:  # <-- Explicit index 0 protected 
         if st.button("Log Out of Admin Status"):
             st.session_state.is_admin = False
             st.rerun()
             
-    with control_cols:  
+    with control_cols[1]:  # <-- Explicit index 1 protected
         if not st.session_state.schedule_db.empty:
             if st.button("Clear All Data Logs"):
                 st.session_state.schedule_db = pd.DataFrame(columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"])
