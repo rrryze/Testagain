@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import json
+import os
 
 # --- CODE CONFIGURATION ---
 st.set_page_config(
@@ -8,17 +10,39 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- INITIALIZE DATABASE & CONFIG (SESSION STATE) ---
+# --- HARD RECOVERY / STORAGE PATHS ---
+DATA_FILE = "mvp_data.json"
+DEFAULT_POOL = ["Harry (Galahad)", "Eggsy (Galahad II)", "Roxy (Lancelot)", "Merlin"]
+
+def load_permanent_names():
+    """Reads permanent configurations from file storage safely."""
+    if os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return DEFAULT_POOL
+    return DEFAULT_POOL
+
+def save_permanent_names(names_list):
+    """Writes updated configurations directly to persistent hardware storage."""
+    try:
+        with open(DATA_FILE, "w") as f:
+            json.dump(names_list, f)
+    except Exception as e:
+        st.error(f"Write Failure: {e}")
+
+# --- INITIALIZE CORE PLATFORM DATABASE (SESSION STATE) ---
 if "schedule_db" not in st.session_state:
     st.session_state.schedule_db = pd.DataFrame(
         columns=["Agent", "Mission Title", "Date", "Start Time", "End Time", "Risk Level"]
     )
 
-if "agent_pool" not in st.session_state:
-    st.session_state.agent_pool = ["Harry (Galahad)", "Eggsy (Galahad II)", "Roxy (Lancelot)", "Merlin"]
-
 if "is_admin" not in st.session_state:
     st.session_state.is_admin = False
+
+# Fetch fresh or saved permanent configurations dynamically on runtime iteration
+agent_pool = load_permanent_names()
 
 # --- EMULATED THEME STYLING ---
 st.markdown("""
@@ -35,8 +59,8 @@ st.divider()
 st.subheader("📊 MVP")
 live_cols = st.columns(4)
 
-# Render the stylized MVP cards with the names
-for i, agent in enumerate(st.session_state.agent_pool):
+# Render the stylized MVP cards with permanently loaded records
+for i, agent in enumerate(agent_pool):
     with live_cols[i]:
         st.markdown(f"""
         <div class='status-card'>
@@ -70,29 +94,30 @@ else:
     st.info("⚡ Authenticated Session Active.")
     
     # 🛠️ EDIT NAMES CAPABILITY
-    st.markdown("#### ⚙️ MVP's Today")  # <-- Changed here
+    st.markdown("#### ⚙️ MVP's Today")
     new_names = []
     edit_cols = st.columns(4)
     
-    # Display editable fields for the 4 agents side-by-side
+    # Pre-populate input modules with the currently locked-in storage settings
     for i in range(4):
         with edit_cols[i]:
-            current_name = st.session_state.agent_pool[i]
+            current_name = agent_pool[i]
             edited_name = st.text_input(f"Operative {i+1} Name", value=current_name, key=f"agent_input_{i}")
             new_names.append(edited_name)
             
-    # Apply roster update
-    if st.button("Update MVP List"):  # <-- Changed here
+    # Apply roster updates straight to file storage
+    if st.button("Update MVP List"):
         if any(name.strip() == "" for name in new_names):
             st.error("❌ Error: Agent names cannot be blank.")
         else:
-            # Map old names to new names in the schedule database to avoid broken records
-            for old_name, new_name in zip(st.session_state.agent_pool, new_names):
+            # Re-map backend parameters for consistency inside temporary deployment table
+            for old_name, new_name in zip(agent_pool, new_names):
                 if old_name != new_name:
                     st.session_state.schedule_db.loc[st.session_state.schedule_db["Agent"] == old_name, "Agent"] = new_name
             
-            st.session_state.agent_pool = new_names
-            st.success("🔄 Roster synchronization complete!")
+            # Commit straight to the permanent hard disk array
+            save_permanent_names(new_names)
+            st.success("💾 Roster permanently locked into database architecture!")
             st.rerun()
 
     # --- DISCONNECT / RESET UTILITIES ---
