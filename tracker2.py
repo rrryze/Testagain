@@ -238,7 +238,7 @@ else:
     
     for i in range(4):
         with edit_cols[i]:
-            edited_name = st.text_input(f"Operative {i+1} Name", value=agent_pool[i], key=f"agent_edit_{i}")
+            edited_name = st.text_input(f"MVP {i+1} Name", value=agent_pool[i], key=f"agent_edit_{i}")
             new_names.append(edited_name)
             
     if st.button("Update MVP List"):
